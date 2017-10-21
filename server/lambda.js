@@ -1,6 +1,6 @@
 'use strict';
 
-const AWS = require("aws-sdk");
+const AWS = require('aws-sdk');
 const doc = require('dynamodb-doc');
 
 exports.handler = (event, context, callback) => {
@@ -34,18 +34,17 @@ function createRoom(spotifyId, callback) {
     const params = {
         TableName: 'room',
         Item: {
-            "spotifyId": spotifyId,
-            "pin": pin,
-            "guestIds": [spotifyId]
+            'spotifyId': spotifyId,
+            'pin': pin,
+            'guestIds': [spotifyId]
         }
     };
     
     const dynamo = new doc.DynamoDB();
 
-    console.log("Adding a new item...");
     dynamo.putItem(params, (err, data) => {
         if (err) {
-            callback("Unable to add item", JSON.stringify(err, null, 2));
+            callback('Unable to add item', JSON.stringify(err, null, 2));
         } else {
             callback(null, pin);
         }
@@ -57,6 +56,24 @@ function endRoom(spotifyId, callback) {
 }
 
 function joinRoom(spotifyId, pin, callback) {
+    
+    const params = {
+        TableName: 'room',
+        Key: { "pin": pin },
+        UpdateExpression: 'set guestIds = list_append(guestIds, :id)',
+        ExpressionAttributeValues: {
+            ':id': [spotifyId]
+        }
+    }
+
+    const dynamo = new doc.DynamoDB();
+    dynamo.updateItem(params, (err, data) => {
+        if (err) {
+            callback('Unable to join room', JSON.stringify(err, null, 2));
+        } else {
+            callback(null, 'Success');
+        }
+    });
 
 }
 
