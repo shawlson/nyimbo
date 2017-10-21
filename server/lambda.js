@@ -22,7 +22,7 @@ exports.handler = (event, context, callback) => {
             joinRoom(event.spotifyId, event.pin, callback);
             break;
         case 'leave':
-            leaveRoom(event.spotifyId, callback);
+            leaveRoom(event.spotifyId, event.pin, callback);
             break;
     }
 };
@@ -51,7 +51,22 @@ function createRoom(spotifyId, callback) {
     });
 }
 
-function endRoom(spotifyId, callback) {
+function endRoom(spotifyId, pin, callback) {
+    
+    const params = {
+        TableName: 'room',
+        Key: { 'pin': pin }
+    };
+    
+    
+    const dynamo = new doc.DynamoDB();
+    dynamo.deleteItem(params, (err, data) => {
+        if (err) {
+            callback("Unable to end the room", JSON.stringify(err, null, 2));
+        } else {
+            callback(null, "Success");
+        }
+    });
 
 }
 
@@ -59,7 +74,7 @@ function joinRoom(spotifyId, pin, callback) {
     
     const params = {
         TableName: 'room',
-        Key: { "pin": pin },
+        Key: { 'pin': pin },
         UpdateExpression: 'set guestIds = list_append(guestIds, :id)',
         ExpressionAttributeValues: {
             ':id': [spotifyId]
